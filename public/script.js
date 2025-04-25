@@ -1,9 +1,7 @@
-// Updated Senior Companion Chatbot Script with expanded responses and smarter replies
-
 let userName = "Friend";
 let reminders = [];
 let isBotTyping = false;
-let ttsEnabled = false;
+let ttsEnabled = false;  // Flag to track if TTS is enabled
 let reminderCheckInterval;
 let lastInteraction = Date.now();
 
@@ -116,7 +114,7 @@ function showBotMessage(text) {
     <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`;
   document.getElementById('chat-messages').appendChild(messageDiv);
   scrollToBottom();
-  if (ttsEnabled) speakText(text);
+  if (ttsEnabled) speakText(text);  // Speak text if TTS is enabled
 }
 
 function showUserMessage(text) {
@@ -181,7 +179,7 @@ function randomItem(array) {
 
 function speakText(text) {
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1;
+  utterance.rate = 1; // Adjust the speech rate
   speechSynthesis.speak(utterance);
 }
 
