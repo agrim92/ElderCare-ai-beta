@@ -1,149 +1,183 @@
 let userName = "Friend";
 let reminders = [];
-let lastInteraction = Date.now();
-let proactiveCheckInterval;
+let recognition;
+let isListening = false;
 
-// Initialize chat
 document.addEventListener('DOMContentLoaded', () => {
-    userName = prompt("Welcome! What's your name?") || "Friend";
-    document.getElementById('username').textContent = userName;
-    addMessage(`Hello ${userName}! I'm here to keep you company and help with reminders.`, 'bot');
-    startProactiveChecks();
-    loadReminders();
+    initializeChat();
+    setupVoiceRecognition();
 });
 
-function addMessage(text, sender) {
-    const messagesDiv = document.getElementById('chat-messages');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${sender}-message`;
-    messageDiv.textContent = text;
-    messagesDiv.appendChild(messageDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    lastInteraction = Date.now();
-}
-
-// Proactive engagement system
-function startProactiveChecks() {
-    proactiveCheckInterval = setInterval(() => {
-        const inactiveMinutes = (Date.now() - lastInteraction) / 60000;
-        if (inactiveMinutes > 2) {
-            showProactiveMessage();
-        }
-    }, 30000);
-}
-
-function showProactiveMessage() {
-    const messages = [
-        "Would you like to hear an interesting fact?",
-        "How about a cheerful joke?",
-        "Shall I share some good news?",
-        "Would you like me to read you a short story?"
-    ];
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    if (confirm(randomMessage)) {
-        const categories = ['story', 'joke', 'fact', 'news'];
-        const category = categories[Math.floor(Math.random() * categories.length)];
-        handleContent(category);
-    }
-}
-
-// Reminder system with localStorage
-function saveReminders() {
-    localStorage.setItem('reminders', JSON.stringify(reminders));
-}
-
-function loadReminders() {
-    const saved = localStorage.getItem('reminders');
-    reminders = saved ? JSON.parse(saved) : [];
-    checkReminders();
-}
-
-function checkReminders() {
-    const now = new Date();
-    reminders = reminders.filter(reminder => {
-        const [hours, minutes] = reminder.time.split(':').map(Number);
-        const reminderTime = new Date();
-        reminderTime.setHours(hours, minutes, 0, 0);
-
-        if (now >= reminderTime) {
-            addMessage(`⏰ Reminder: Time to take your ${reminder.medication}!`, 'bot');
-            return false;
-        }
-        return true;
-    });
-    saveReminders();
-    setTimeout(checkReminders, 60000); // Check every minute
-}
-
-// Menu system
-function showMenu() {
-    const menuText = `Main Menu:
-    1. 📖 Story
-    2. 🗞️ News
-    3. 😄 Joke
-    4. 🧠 Fact
-    5. Exit`;
+function initializeChat() {
+    userName = localStorage.getItem('userName') || prompt("Welcome! What's your name?") || "Friend";
+    localStorage.setItem('userName', userName);
     
-    const choice = prompt(menuText);
-    handleMenuChoice(choice);
+    renderGreeting();
+    showBotMessage(`Hello ${userName}! I'm here to help you with reminders and keep you company. 
+        You can ask me for stories, jokes, or facts!`);
+    
+    loadReminders();
+    startProactiveChecks();
+    
+    document.getElementById('user-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleUserInput();
+    });
 }
 
-function handleMenuChoice(choice) {
-    switch(choice) {
-        case '1':
-            handleContent('story');
-            break;
-        case '2':
-            handleContent('news');
-            break;
-        case '3':
-            handleContent('joke');
-            break;
-        case '4':
-            handleContent('fact');
-            break;
-        case '5':
-            addMessage(`Goodbye ${userName}! Have a wonderful day! 😊`, 'bot');
-            break;
-        default:
-            alert("Please choose 1-5");
+function renderGreeting() {
+    document.querySelector('.header-info h1').textContent = `Hello, ${userName}!`;
+}
+
+function showBotMessage(text) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message bot-message';
+    messageDiv.innerHTML = `
+        <div class="message-content">${text}</div>
+        <div class="message-time">${getCurrentTime()}</div>
+    `;
+    document.getElementById('chat-messages').appendChild(messageDiv);
+    scrollToBottom();
+}
+
+function showUserMessage(text) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message user-message';
+    messageDiv.innerHTML = `
+        <div class="message-content">${text}</div>
+        <div class="message-time">${getCurrentTime()}</div>
+    `;
+    document.getElementById('chat-messages').appendChild(messageDiv);
+    scrollToBottom();
+}
+
+function handleUserInput() {
+    const input = document.getElementById('user-input');
+    const text = input.value.trim();
+    
+    if (text) {
+        showUserMessage(text);
+        processUserInput(text);
+        input.value = '';
     }
 }
 
-function handleContent(type) {
-    const content = {
-        story: [
-            "Did you know the first computer was invented in the 1940s? It was as big as a room!",
-            "My favorite story is about a cat who became a chef. His specialty? Mice cream sundaes!"
-        ],
-        joke: [
-            "Why don't skeletons fight each other? They don't have the guts!",
-            "What do you call a bear with no teeth? A gummy bear!"
-        ],
-        fact: [
-            "Bananas are berries, but strawberries aren’t!",
-            "Octopuses have three hearts and blue blood!"
-        ],
-        news: [
-            "🌍 Local News: The community center is hosting a free classical music concert!",
-            "📰 Update: New walking club forming in the park every morning"
-        ]
+function processUserInput(text) {
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('remind')) {
+        showReminderForm();
+    } else if (lowerText.includes('story')) {
+        tellStory();
+    } else if (lowerText.includes('joke')) {
+        tellJoke();
+    } else if (lowerText.includes('fact')) {
+        tellFact();
+    } else {
+        showBotMessage("I'm here to help! You can ask me for:<br>" + 
+            "- Stories 📖<br>- Jokes 😄<br>- Facts 🧠<br>" + 
+            "Or set reminders with ⏰");
+    }
+}
+
+// Voice Recognition
+function setupVoiceRecognition() {
+    recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('user-input').value = transcript;
+        handleUserInput();
     };
 
-    const item = content[type][Math.floor(Math.random() * content[type].length)];
-    addMessage(item, 'bot');
+    recognition.onerror = () => {
+        document.body.classList.remove('voice-active');
+        isListening = false;
+    };
 }
 
-// Reminder form handling
-function showReminderForm() {
-    const med = prompt("What medication would you like to be reminded about?");
-    const time = prompt("When should I remind you? (Use 24-hour format like 14:30)");
-
-    if (med && time && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
-        reminders.push({ medication: med, time: time });
-        saveReminders();
-        addMessage(`✅ I'll remind you to take ${med} at ${time}`, 'bot');
-    } else {
-        alert("Please provide valid medication name and time (HH:MM format)");
+function startVoiceInput() {
+    if (!isListening) {
+        recognition.start();
+        document.body.classList.add('voice-active');
+        isListening = true;
     }
+}
+
+// Enhanced Reminder System
+function showReminderForm() {
+    const medication = prompt("What would you like to be reminded about?");
+    if (!medication) return;
+
+    const time = prompt("When should I remind you? (e.g., 14:30)");
+    if (!validateTime(time)) {
+        alert("Please use HH:MM format");
+        return;
+    }
+
+    reminders.push({ medication, time });
+    saveReminders();
+    showBotMessage(`✅ I'll remind you to ${medication} at ${time}`);
+    updateRemindersList();
+}
+
+function updateRemindersList() {
+    const list = document.getElementById('reminders-list');
+    list.innerHTML = reminders.map((reminder, index) => `
+        <div class="reminder-item">
+            <span>⏰ ${reminder.medication} at ${reminder.time}</span>
+            <button onclick="deleteReminder(${index})">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+function deleteReminder(index) {
+    reminders.splice(index, 1);
+    saveReminders();
+    updateRemindersList();
+}
+
+// Proactive Engagement
+function startProactiveChecks() {
+    setInterval(() => {
+        const inactiveMinutes = (Date.now() - lastInteraction) / 60000;
+        if (inactiveMinutes > 5) {
+            showProactiveCheck();
+        }
+    }, 300000); // Check every 5 minutes
+}
+
+function showProactiveCheck() {
+    const options = [
+        { text: "Would you like to hear a story?", type: "story" },
+        { text: "How about a joke to cheer you up?", type: "joke" },
+        { text: "Shall I remind you about any medications?", type: "reminder" }
+    ];
+    
+    const choice = options[Math.floor(Math.random() * options.length)];
+    showBotMessage(choice.text);
+    setTimeout(() => {
+        if (choice.type === 'reminder') {
+            showReminderForm();
+        } else {
+            handleContent(choice.type);
+        }
+    }, 1500);
+}
+
+// Helper Functions
+function getCurrentTime() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function scrollToBottom() {
+    const chatWindow = document.getElementById('chat-messages');
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function toggleMenu() {
+    document.getElementById('sidebar').classList.toggle('active');
 }
