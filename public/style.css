@@ -67,15 +67,31 @@ body.dark .container {
   font-size: 0.9rem;
 }
 
-.tts-toggle {
+.header-controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
   margin-left: auto;
-  font-size: 1.2rem;
+}
+
+.header-controls button {
   background: none;
   border: none;
   color: white;
+  font-size: 1.2rem;
   cursor: pointer;
+  transition: color 0.3s ease;
 }
-.tts-toggle.active {
+
+.header-controls button:hover {
+  color: var(--primary);
+}
+
+body.dark .header-controls button {
+  color: #fff;
+}
+
+body.dark .header-controls button:hover {
   color: #ffeb3b;
 }
 
