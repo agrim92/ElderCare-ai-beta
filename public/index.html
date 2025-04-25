@@ -11,51 +11,39 @@
     <div class="container">
         <div class="chat-header">
             <div class="bot-avatar">
-                <img src="assets/bot-avatar.png" alt="Friendly Bot">
+                <img src="assets/bot-avatar.png" alt="Companion Bot">
             </div>
-            <div class="header-info">
+            <div class="header-text">
                 <h1>Senior Companion</h1>
-                <p>Your friendly daily helper</p>
+                <p>Your Friendly Digital Assistant</p>
             </div>
-            <button class="menu-btn" onclick="toggleMenu()">
-                <i class="fas fa-ellipsis-v"></i>
-            </button>
         </div>
 
         <div class="chat-window">
             <div id="chat-messages" class="chat-messages"></div>
             
-            <div class="quick-reply-bar">
-                <button class="quick-reply" onclick="handleQuickReply('story')">
-                    📖 Story
+            <div class="quick-actions">
+                <button class="quick-action" data-action="story">
+                    <i class="fas fa-book-open"></i> Story
                 </button>
-                <button class="quick-reply" onclick="handleQuickReply('joke')">
-                    😄 Joke
+                <button class="quick-action" data-action="joke">
+                    <i class="fas fa-laugh-beam"></i> Joke
                 </button>
-                <button class="quick-reply" onclick="showReminderForm()">
-                    ⏰ Reminder
+                <button class="quick-action" data-action="fact">
+                    <i class="fas fa-lightbulb"></i> Fact
+                </button>
+                <button class="quick-action" data-action="reminder">
+                    <i class="fas fa-bell"></i> Reminder
                 </button>
             </div>
 
-            <div class="input-container">
-                <input type="text" id="user-input" placeholder="Type your message..." 
-                       aria-label="Chat input">
-                <button id="send-btn" onclick="handleUserInput()">
-                    <img src="assets/send-icon.svg" alt="Send">
-                </button>
-                <button id="voice-btn" onclick="startVoiceInput()">
-                    <i class="fas fa-microphone"></i>
+            <div class="input-area">
+                <input type="text" id="user-input" class="input-field" 
+                       placeholder="Type your message here..." aria-label="Chat input">
+                <button id="send-btn" class="action-button">
+                    <i class="fas fa-paper-plane"></i> Send
                 </button>
             </div>
-        </div>
-
-        <!-- Reminder Sidebar -->
-        <div class="sidebar" id="sidebar">
-            <h2>Your Reminders</h2>
-            <div id="reminders-list"></div>
-            <button class="btn" onclick="showReminderForm()">
-                + Add Reminder
-            </button>
         </div>
     </div>
 
