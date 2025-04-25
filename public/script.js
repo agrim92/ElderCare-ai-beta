@@ -1,24 +1,41 @@
+// Updated Senior Companion Chatbot Script with expanded responses and smarter replies
+
 let userName = "Friend";
 let reminders = [];
 let isBotTyping = false;
-let isTTSActive = true; // TTS initially ON
+let ttsEnabled = false;
+let reminderCheckInterval;
+let lastInteraction = Date.now();
 
-// Content database
 const content = {
   stories: [
     "Once upon a time, in a peaceful village nestled between mountains, there lived a wise old owl who could solve any problem...",
     "Long ago, a retired postman named Arthur discovered he could talk to animals. His first friend was a mischievous squirrel named Pip...",
+    "A gentle sea turtle once swam across the oceans helping lost sea creatures find their homes..."
   ],
   jokes: [
     "Why don't scientists trust atoms? Because they make up everything!",
     "What do you call a fish wearing a bowtie? Sofishticated!",
+    "Why did the scarecrow win an award? Because he was outstanding in his field!"
   ],
   facts: [
     "A group of flamingos is called a 'flamboyance'!",
     "Honey never spoils. Archaeologists have found 3000-year-old honey in Egyptian tombs that's still edible!",
+    "Octopuses have three hearts and blue blood!"
+  ],
+  support: [
+    "I'm here for you whenever you need to talk.",
+    "You're never alone — I'm always around to chat.",
+    "It's okay to feel that way. I'm here to listen."
+  ],
+  motivation: [
+    "You're stronger than you think. 💪",
+    "Every day is a new beginning.",
+    "You’ve got this! I believe in you."
   ]
 };
 
+// On page load
 document.addEventListener('DOMContentLoaded', () => {
   initializeChat();
   setupEventListeners();
@@ -34,16 +51,22 @@ function initializeChat() {
 }
 
 function setupEventListeners() {
-  // Send button and Enter key
   document.getElementById('send-btn').addEventListener('click', handleUserInput);
   document.getElementById('user-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleUserInput();
   });
 
-  // Quick action buttons
   document.querySelectorAll('.quick-action').forEach(button => {
     button.addEventListener('click', handleQuickAction);
   });
+
+  const ttsToggle = document.getElementById('tts-toggle');
+  if (ttsToggle) {
+    ttsToggle.addEventListener('click', () => {
+      ttsEnabled = !ttsEnabled;
+      ttsToggle.textContent = ttsEnabled ? '🔊 TTS: On' : '🔈 TTS: Off';
+    });
+  }
 }
 
 function handleQuickAction(event) {
@@ -53,13 +76,13 @@ function handleQuickAction(event) {
   setTimeout(() => {
     switch(action) {
       case 'story':
-        showBotMessage(content.stories[Math.floor(Math.random() * content.stories.length)]);
+        showBotMessage(randomItem(content.stories));
         break;
       case 'joke':
-        showBotMessage(`Here's a joke: ${content.jokes[Math.floor(Math.random() * content.jokes.length)]} 😄`);
+        showBotMessage(`Here's a joke: ${randomItem(content.jokes)} 😄`);
         break;
       case 'fact':
-        showBotMessage(`Did you know? ${content.facts[Math.floor(Math.random() * content.facts.length)]} 🧠`);
+        showBotMessage(`Did you know? ${randomItem(content.facts)} 🧠`);
         break;
       case 'reminder':
         showReminderForm();
@@ -70,45 +93,30 @@ function handleQuickAction(event) {
 
 function showTypingIndicator() {
   if (isBotTyping) return;
-  
+
   isBotTyping = true;
   const typingDiv = document.createElement('div');
   typingDiv.className = 'message bot-message typing-indicator';
-  typingDiv.innerHTML = `
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-  `;
-  
-  const chatMessages = document.getElementById('chat-messages');
-  chatMessages.appendChild(typingDiv);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  typingDiv.innerHTML = `<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
+  document.getElementById('chat-messages').appendChild(typingDiv);
+  scrollToBottom();
 }
 
 function removeTypingIndicator() {
-  const typingIndicators = document.querySelectorAll('.typing-indicator');
-  typingIndicators.forEach(indicator => indicator.remove());
+  document.querySelectorAll('.typing-indicator').forEach(el => el.remove());
   isBotTyping = false;
 }
 
 function showBotMessage(text) {
   removeTypingIndicator();
-  
   const messageDiv = document.createElement('div');
   messageDiv.className = 'message bot-message';
   messageDiv.innerHTML = `
     <div class="message-content">${text}</div>
-    <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-  `;
-  
-  const chatMessages = document.getElementById('chat-messages');
-  chatMessages.appendChild(messageDiv);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-
-  // Trigger TTS if active
-  if (isTTSActive) {
-    speakMessage(text);
-  }
+    <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`;
+  document.getElementById('chat-messages').appendChild(messageDiv);
+  scrollToBottom();
+  if (ttsEnabled) speakText(text);
 }
 
 function showUserMessage(text) {
@@ -116,82 +124,69 @@ function showUserMessage(text) {
   messageDiv.className = 'message user-message';
   messageDiv.innerHTML = `
     <div class="message-content">${text}</div>
-    <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-  `;
-  
+    <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`;
+  document.getElementById('chat-messages').appendChild(messageDiv);
+  scrollToBottom();
+}
+
+function scrollToBottom() {
   const chatMessages = document.getElementById('chat-messages');
-  chatMessages.appendChild(messageDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 function handleUserInput() {
   const input = document.getElementById('user-input');
   const text = input.value.trim();
-  
+
   if (text) {
     showUserMessage(text);
     processUserInput(text);
     input.value = '';
+    lastInteraction = Date.now();
   }
 }
 
 function processUserInput(text) {
   showTypingIndicator();
-  
   setTimeout(() => {
-    const lowerText = text.toLowerCase();
-    
-    if (lowerText.includes('remind')) {
-      showReminderForm();
-    } else if (lowerText.includes('story')) {
-      showBotMessage(content.stories[Math.floor(Math.random() * content.stories.length)]);
-    } else if (lowerText.includes('joke')) {
-      showBotMessage(`Here's a joke: ${content.jokes[Math.floor(Math.random() * content.jokes.length)]} 😄`);
-    } else if (lowerText.includes('fact')) {
-      showBotMessage(`Did you know? ${content.facts[Math.floor(Math.random() * content.facts.length)]} 🧠`);
-    } else {
-      showBotMessage("I'm here to help! You can ask me for:<br><br>" + 
-        "📖 Stories<br>" +
-        "😄 Jokes<br>" +
-        "🧠 Interesting Facts<br>" +
-        "⏰ Medication Reminders");
-    }
+    const response = getBotResponse(text.toLowerCase());
+    showBotMessage(response);
   }, 800);
 }
 
-// Reminder System
-let reminderCheckInterval;
-
-function loadReminders() {
-  const saved = localStorage.getItem('reminders');
-  reminders = saved ? JSON.parse(saved) : [];
-  startReminderChecker();
+function getBotResponse(message) {
+  if (message.includes("hello") || message.includes("hi") || message.includes("good morning")) {
+    return `Hello ${userName}! 😊 How can I help you today?`;
+  } else if (message.includes("sad") || message.includes("lonely")) {
+    return randomItem(content.support);
+  } else if (message.includes("motivate") || message.includes("encourage")) {
+    return randomItem(content.motivation);
+  } else if (message.includes("story")) {
+    return randomItem(content.stories);
+  } else if (message.includes("joke")) {
+    return `Here's a joke: ${randomItem(content.jokes)} 😄`;
+  } else if (message.includes("fact")) {
+    return `Did you know? ${randomItem(content.facts)} 🧠`;
+  } else if (message.includes("remind")) {
+    showReminderForm();
+    return "Let's set up your reminder.";
+  } else {
+    return "I'm here to help! You can ask me for stories, jokes, reminders, or just chat. 😊";
+  }
 }
 
-function startReminderChecker() {
-  if (reminderCheckInterval) clearInterval(reminderCheckInterval);
-  reminderCheckInterval = setInterval(checkReminders, 1000); // Check every second
+function randomItem(array) {
+  return array[Math.floor(Math.random() * array.length)];
 }
 
-function checkReminders() {
-  const now = new Date();
-  const currentHours = now.getHours().toString().padStart(2, '0');
-  const currentMinutes = now.getMinutes().toString().padStart(2, '0');
-  const currentTime = `${currentHours}:${currentMinutes}`;
+function speakText(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1;
+  speechSynthesis.speak(utterance);
+}
 
-  reminders.forEach((reminder, index) => {
-    if (reminder.time === currentTime && !reminder.triggered) {
-      showBotMessage(`⏰ REMINDER: Time to take your ${reminder.medication}!`);
-      reminders[index].triggered = true;
-      saveReminders();
-      
-      // Reset for next day
-      setTimeout(() => {
-        reminders[index].triggered = false;
-        saveReminders();
-      }, 60000); // Reset after 1 minute
-    }
-  });
+function validateTime(time) {
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
 }
 
 function showReminderForm() {
@@ -204,27 +199,45 @@ function showReminderForm() {
     return;
   }
 
-  reminders.push({
-    medication: medication,
-    time: time,
-    triggered: false
-  });
-  
+  reminders.push({ medication, time, triggered: false });
   saveReminders();
   startReminderChecker();
   showBotMessage(`✅ I'll remind you to take ${medication} at ${time}`);
+}
+
+function loadReminders() {
+  const saved = localStorage.getItem('reminders');
+  reminders = saved ? JSON.parse(saved) : [];
+  startReminderChecker();
 }
 
 function saveReminders() {
   localStorage.setItem('reminders', JSON.stringify(reminders));
 }
 
-function validateTime(time) {
-  const regex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;
-  return regex.test(time);
+function startReminderChecker() {
+  if (reminderCheckInterval) clearInterval(reminderCheckInterval);
+  reminderCheckInterval = setInterval(checkReminders, 1000);
 }
 
-// Proactive Engagement
+function checkReminders() {
+  const now = new Date();
+  const currentTime = now.toTimeString().slice(0,5);
+
+  reminders.forEach((reminder, index) => {
+    if (reminder.time === currentTime && !reminder.triggered) {
+      showBotMessage(`⏰ REMINDER: Time to take your ${reminder.medication}!`);
+      reminders[index].triggered = true;
+      saveReminders();
+
+      setTimeout(() => {
+        reminders[index].triggered = false;
+        saveReminders();
+      }, 60000);
+    }
+  });
+}
+
 function startProactiveChecks() {
   setInterval(() => {
     const inactiveMinutes = (Date.now() - lastInteraction) / 60000;
@@ -234,40 +247,18 @@ function startProactiveChecks() {
   }, 300000);
 }
 
-let lastInteraction = Date.now();
-
 function showProactiveCheck() {
   const options = [
     { text: "Would you like to hear a story?", type: "story" },
     { text: "How about a joke to cheer you up?", type: "joke" },
     { text: "Shall I remind you about any medications?", type: "reminder" }
   ];
-  
-  const choice = options[Math.floor(Math.random() * options.length)];
+
+  const choice = randomItem(options);
   showBotMessage(choice.text);
   lastInteraction = Date.now();
 }
 
 function renderGreeting() {
   document.querySelector('.header-text h1').textContent = `Hello, ${userName}!`;
-}
-
-// Text-to-Speech functionality
-function speakMessage(text) {
-  const speech = new SpeechSynthesisUtterance(text);
-  speech.lang = 'en-US';
-  window.speechSynthesis.speak(speech);
-}
-
-// Toggle TTS (Text-to-Speech)
-function toggleTTS() {
-  isTTSActive = !isTTSActive;
-  const ttsButton = document.querySelector('.tts-toggle');
-  if (isTTSActive) {
-    ttsButton.classList.add('active');
-    showBotMessage('Text-to-Speech is ON. I will read out my messages!');
-  } else {
-    ttsButton.classList.remove('active');
-    showBotMessage('Text-to-Speech is OFF. I won\'t read out my messages.');
-  }
 }
