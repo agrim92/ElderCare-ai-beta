@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senior Companion Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👵 Senior Companion 🤖</h1>
+            <div class="user-greeting">Hello, <span id="username">Friend</span>!</div>
+        </header>
+
+        <div class="chat-container">
+            <div id="chat-messages" class="chat-messages"></div>
+            
+            <div class="menu-buttons">
+                <button class="btn" onclick="showMenu()">
+                    <i class="fas fa-bars"></i> Menu
+                </button>
+                <button class="btn" onclick="showReminderForm()">
+                    <i class="fas fa-bell"></i> Set Reminder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
