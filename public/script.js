@@ -154,32 +154,64 @@ function processUserInput(text) {
 }
 
 // Reminder System
+// Add this at the top with other variables
+let reminderCheckInterval;
+
+// Update the loadReminders function
+function loadReminders() {
+  const saved = localStorage.getItem('reminders');
+  reminders = saved ? JSON.parse(saved) : [];
+  startReminderChecker();
+}
+
+// Add this new function
+function startReminderChecker() {
+  if (reminderCheckInterval) clearInterval(reminderCheckInterval);
+  reminderCheckInterval = setInterval(checkReminders, 1000); // Check every second
+}
+
+// Update the checkReminders function
+function checkReminders() {
+  const now = new Date();
+  const currentHours = now.getHours().toString().padStart(2, '0');
+  const currentMinutes = now.getMinutes().toString().padStart(2, '0');
+  const currentTime = `${currentHours}:${currentMinutes}`;
+
+  reminders.forEach((reminder, index) => {
+    if (reminder.time === currentTime && !reminder.triggered) {
+      showBotMessage(`⏰ REMINDER: Time to take your ${reminder.medication}!`);
+      reminders[index].triggered = true; // Mark as triggered
+      saveReminders();
+      
+      // Reset for next day
+      setTimeout(() => {
+        reminders[index].triggered = false;
+        saveReminders();
+      }, 60000); // Reset after 1 minute
+    }
+  });
+}
+
+// Update the showReminderForm function
 function showReminderForm() {
   const medication = prompt("What would you like to be reminded about?");
   if (!medication) return;
 
   const time = prompt("When should I remind you? (e.g., 14:30)");
   if (!validateTime(time)) {
-    alert("Please use HH:MM format");
+    alert("Please use HH:MM format (00:00 to 23:59)");
     return;
   }
 
-  reminders.push({ medication, time });
+  reminders.push({
+    medication: medication,
+    time: time,
+    triggered: false
+  });
+  
   saveReminders();
-  showBotMessage(`✅ I'll remind you to ${medication} at ${time}`);
-}
-
-function validateTime(time) {
-  return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
-}
-
-function saveReminders() {
-  localStorage.setItem('reminders', JSON.stringify(reminders));
-}
-
-function loadReminders() {
-  const saved = localStorage.getItem('reminders');
-  reminders = saved ? JSON.parse(saved) : [];
+  startReminderChecker(); // Restart checker with new reminder
+  showBotMessage(`✅ I'll remind you to take ${medication} at ${time}`);
 }
 
 // Proactive Engagement
