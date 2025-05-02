@@ -37,6 +37,7 @@ body.dark {
   overflow: hidden;
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
+
 body.dark .container {
   background: #2c2c2c;
 }
@@ -74,25 +75,53 @@ body.dark .container {
   margin-left: auto;
 }
 
-.header-controls button {
+/* TTS Toggle Styles */
+#tts-toggle {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 20px;
+  padding: 8px 15px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
+}
+
+#tts-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+#tts-toggle[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+body.dark #tts-toggle {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dark);
+}
+
+.dark-mode-toggle {
   background: none;
   border: none;
   color: white;
-  font-size: 1.2rem;
+  padding: 8px 15px;
+  border-radius: 20px;
   cursor: pointer;
-  transition: color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
 }
 
-.header-controls button:hover {
-  color: var(--primary);
+.dark-mode-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-body.dark .header-controls button {
-  color: #fff;
-}
-
-body.dark .header-controls button:hover {
-  color: #ffeb3b;
+body.dark .dark-mode-toggle {
+  color: var(--text-dark);
 }
 
 /* Chat Window */
@@ -150,6 +179,10 @@ body.dark .bot-message {
   text-align: right;
 }
 
+body.dark .message-time {
+  color: #aaa;
+}
+
 /* Quick Actions */
 .quick-actions {
   display: flex;
@@ -168,6 +201,7 @@ body.dark .bot-message {
   color: #004d99;
   transition: background-color var(--transition-fast);
 }
+
 .quick-action:hover {
   background-color: var(--accent-hover);
 }
@@ -176,6 +210,7 @@ body.dark .quick-action {
   background-color: #444;
   color: #eee;
 }
+
 body.dark .quick-action:hover {
   background-color: #555;
 }
@@ -196,6 +231,7 @@ body.dark .quick-action:hover {
   background-color: white;
   transition: background-color var(--transition-fast);
 }
+
 body.dark .input-field {
   background-color: #333;
   color: #fff;
@@ -212,6 +248,7 @@ body.dark .input-field {
   cursor: pointer;
   transition: background-color var(--transition-fast);
 }
+
 .action-button:hover {
   background-color: var(--primary-dark);
 }
@@ -224,6 +261,7 @@ body.dark .input-field {
   justify-content: start;
   padding-left: 10px;
 }
+
 .typing-indicator .dot {
   width: 8px;
   height: 8px;
@@ -231,9 +269,15 @@ body.dark .input-field {
   border-radius: 50%;
   animation: bounce 1s infinite ease-in-out;
 }
+
+body.dark .typing-indicator .dot {
+  background: #aaa;
+}
+
 .typing-indicator .dot:nth-child(2) {
   animation-delay: 0.2s;
 }
+
 .typing-indicator .dot:nth-child(3) {
   animation-delay: 0.4s;
 }
